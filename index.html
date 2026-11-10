@@ -48,20 +48,26 @@
   section { margin-top: 28px; }
   .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
   .head small, .muted { color: var(--muted); font-size: 13px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-  .video { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 22px; }
+  .video { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
   .thumb { position: relative; display: block; aspect-ratio: 16/9; background: var(--line); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .thumb span { position: absolute; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: rgba(16,28,63,.88); color: #fff; }
-  .thumb .rank { top: 6px; left: 6px; } .thumb .dur { bottom: 6px; right: 6px; }
-  .thumb .out { top: 6px; right: 6px; font-size: 12px; }
-  .out.hot { background: var(--pink); } .out.warm { background: var(--teal); color: var(--navy); } .out.cold { background: rgba(16,28,63,.88); color: #b9c3de; }
-  .video .body { padding: 10px 12px 12px; display: flex; flex-direction: column; flex: 1; }
-  .video .title { font-weight: 600; font-size: 14px; line-height: 1.35; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .video .meta { font-size: 12px; color: var(--muted); margin-top: 5px; }
+  .thumb .dur { bottom: 8px; right: 8px; }
+  .video .body { padding: 14px 16px 12px; display: flex; flex-direction: column; flex: 1; }
+  .video .tags { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 12px; }
+  .video .rank { color: var(--muted); font-weight: 600; margin-right: 2px; }
+  .pill { font-weight: 700; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+  .pill.hot { background: var(--pink); color: #fff; } .pill.warm { background: var(--teal); color: var(--navy); }
+  .pill.cold, .pill.ads { background: var(--bg); color: var(--muted); border: 1px solid var(--line); font-weight: 600; }
+  .video .title { font-weight: 600; font-size: 15px; line-height: 1.4; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .video .meta { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .video .meta.small { font-size: 12px; }
   .video .strong { color: var(--text); font-weight: 600; }
-  .video .why { margin-top: auto; align-self: flex-start; font-size: 12px; font-weight: 600; padding: 5px 10px; color: var(--accent); background: none; }
-  .video .why-wrap { padding-top: 10px; margin-top: auto; }
+  .video .why { border: 0; background: none; padding: 0; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .video .why:hover { text-decoration: underline; }
+  .video .why-wrap { margin-top: auto; padding-top: 12px; }
+  .video .why-wrap div { border-top: 1px solid var(--line); padding-top: 10px; }
   .notice { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
   .notice code { background: rgba(127,127,127,.2); padding: 1px 5px; border-radius: 4px; }
   .error { color: #d9342b; }
@@ -106,11 +112,11 @@
   tr.elastic td { background: color-mix(in srgb, var(--teal) 14%, transparent); font-weight: 600; }
   td .best { color: var(--pink); font-weight: 700; }
   .thumbs-btn { padding: 4px 12px; font-size: 13px; font-weight: 600; color: var(--accent); background: none; }
-  .thumbs { margin-bottom: 16px; border-top: 3px solid var(--pink); }
-  .thumbs h4 { margin: 14px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  .thumbs ul { margin: 0; padding-left: 18px; } .thumbs li { margin-bottom: 6px; }
-  .thumbs .t-row { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); }
-  .thumbs .t-row img { width: 120px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; flex: none; }
+  .thumbs { margin-bottom: 20px; border-top: 3px solid var(--pink); padding: 20px 22px; line-height: 1.6; }
+  .thumbs h4 { margin: 20px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .thumbs ul { margin: 0; padding-left: 18px; } .thumbs li { margin-bottom: 10px; }
+  .thumbs .t-row { display: flex; gap: 16px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--line); }
+  .thumbs .t-row img { width: 168px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; flex: none; }
   .hidden { display: none; }
 </style>
 </head>
@@ -354,7 +360,7 @@ const sets = { topic: [], channel: [] };
 function outlierBadge(v) {
   if (v.outlier == null) return '';
   const cls = v.outlier >= 5 ? 'hot' : v.outlier >= 2 ? 'warm' : 'cold';
-  return `<span class="out ${cls}" title="Views compared with this channel's typical video">${times(v.outlier)}</span>`;
+  return `<span class="pill ${cls}" title="Outlier score: views compared with this channel's typical video">${times(v.outlier)} outlier</span>`;
 }
 
 function cards(videos, set) {
@@ -362,14 +368,15 @@ function cards(videos, set) {
     <div class="video">
       <a class="thumb" href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">
         <img src="${esc(v.thumbnail)}" alt="" loading="lazy">
-        <span class="rank">#${i + 1}</span>${outlierBadge(v)}<span class="dur">${fmtDur(v.seconds)}</span>
+        <span class="dur">${fmtDur(v.seconds)}</span>
       </a>
       <div class="body">
+        <div class="tags"><span class="rank">#${i + 1}</span>${outlierBadge(v)}${likelyAds(v) ? '<span class="pill ads" title="Many views, almost no likes or comments">likely ads</span>' : ''}</div>
         <a class="title" href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>
         <div class="meta"><a href="https://www.youtube.com/channel/${esc(v.channelId)}" target="_blank" rel="noopener">${esc(v.channel)}</a>${v.subs != null ? ` · ${num(v.subs)} subs` : ''}</div>
         <div class="meta"><span class="strong">${num(v.views)} views</span> · ${fmtDate(v.publishedAt)}</div>
-        <div class="meta">${num(v.viewsPerDay)} views/day · ${pct(v.engagement)} engagement${likelyAds(v) ? ' · <span class="strong" title="Many views, almost no likes or comments">likely ads</span>' : ''}</div>
-        <div class="why-wrap"><button type="button" class="why" data-set="${set}" data-id="${esc(v.id)}">Why did it perform?</button></div>
+        <div class="meta small">${num(v.viewsPerDay)} views/day · ${pct(v.engagement)} engagement</div>
+        <div class="why-wrap"><div><button type="button" class="why" data-set="${set}" data-id="${esc(v.id)}">Why did it perform?</button></div></div>
       </div>
     </div>`).join('') + '</div>';
 }
@@ -525,7 +532,7 @@ async function loadVideos(f) {
     sets.topic = shown.topic = videos;
     $('thumbs-topic').innerHTML = '';
     if (!videos.length) { $('videos').innerHTML = '<p class="muted">No videos matched these filters. Try loosening them.</p>'; return; }
-    $('videoInfo').textContent = `${videos.length} shown of ${candidates} that matched · ${num(videos.reduce((n, v) => n + v.views, 0))} total views · badge = outlier score`;
+    $('videoInfo').textContent = `${videos.length} shown of ${candidates} that matched · ${num(videos.reduce((n, v) => n + v.views, 0))} total views · pill = outlier score`;
     videoTitles = Object.fromEntries(videos.map((v) => [v.id, v.title]));
     $('videos').innerHTML = cards(videos, 'topic');
     loadComments(videos.slice(0, 10).map((v) => v.id));
@@ -638,7 +645,7 @@ function renderChannel() {
   sets.channel = channelData.videos;
   shown.channel = videos;
   $('thumbs-channel').innerHTML = '';
-  $('channelInfo').textContent = `${videos.length} shown of ${matched} that matched · badge = views against this channel's typical video of the same kind`;
+  $('channelInfo').textContent = `${videos.length} shown of ${matched} that matched · outlier = views against this channel's typical video of the same kind`;
   $('channelVideos').innerHTML = videos.length ? cards(videos, 'channel')
     : `<p class="muted">No videos matched${$('chTopic').checked && topic ? ` "${esc(topic)}" in the title or tags` : ''}.</p>`;
 }
