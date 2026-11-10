@@ -8,6 +8,7 @@ Ideas for what to build next, roughly in order of value.
 - [ ] **Payoff check.** Does the video deliver what the title and thumbnail promise? Same data source as the hook analysis.
 - [ ] **Retention.** Where viewers drop off. Only possible for our own channels, through the YouTube Analytics API (needs sign-in as a channel owner). Not available for competitors.
 - [ ] **Transcripts for our own videos**, through the official captions API (also needs channel owner sign-in).
+- [ ] **Search inside videos.** Pull frames with ffmpeg, read on-screen text and code with OCR, describe what is shown with computer vision, and combine that with the transcript. Then search for a moment, for example "where do they show the Kibana dashboard". Start with our own videos, where we have the files.
 
 ## More channels to learn from
 
@@ -24,6 +25,10 @@ Ideas for what to build next, roughly in order of value.
 - [ ] **Thumbnail search** with Jina multimodal embeddings: find thumbnails by description or by example.
 - [ ] **Compare two topics side by side**, for example "observability" against "OpenTelemetry".
 - [ ] **Video idea list.** Turn the questions, forum topics and search suggestions into a ranked list of video ideas.
+
+## Make it reusable
+
+- [ ] **Turn it into a Claude skill.** Package the research steps (search, outliers, comments, forum, channel comparison) so Claude can run them from a chat and return a research brief, without opening the app.
 
 ## Housekeeping
 
