@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topic Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Elastic palette: blue #0B64DD, navy #101C3F, teal #48EFCF, pink #F04E98, yellow #FEC514 */
+  :root {
+    --navy: #101c3f; --blue: #0b64dd; --teal: #48efcf; --pink: #f04e98; --yellow: #fec514;
+    --bg: #f5f7fa; --card: #fff; --text: #1c1e23; --muted: #646a77; --line: #e0e5ee;
+    --accent: #0b64dd; --accent-text: #fff; --warn-bg: #fff8e1; --warn-line: #fec514; --ok: #00806a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1228; --card: #141d3d; --text: #eef1f7; --muted: #9aa6c4; --line: #26315a;
+      --accent: #61a2ff; --accent-text: #0b1228; --warn-bg: #2b2710; --warn-line: #8a6d0f; --ok: #48efcf;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  header { background: var(--navy); color: #fff; border-bottom: 3px solid var(--teal); }
+  header .in { max-width: 1200px; margin: 0 auto; padding: 18px 16px 0; }
+  header h1 { font-size: 22px; margin: 0; font-weight: 700; letter-spacing: -.01em; }
+  header h1 span { color: var(--teal); }
+  header p { margin: 2px 0 14px; color: #b9c3de; font-size: 14px; }
+  nav { display: flex; gap: 4px; }
+  nav button { background: none; border: 0; color: #b9c3de; padding: 9px 16px; border-radius: 8px 8px 0 0; font-weight: 600; }
+  nav button.on { background: var(--bg); color: var(--text); }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 64px; }
+  h2 { font-size: 17px; margin: 0; font-weight: 700; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  form, .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+  .row + .row { margin-top: 12px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 500; }
+  label.check { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 9px; }
+  input, select, button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  input[type=checkbox] { accent-color: var(--blue); }
+  input.num { width: 110px; }
+  .q { flex: 1; min-width: 220px; font-size: 16px; padding: 10px 12px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 600; padding: 10px 20px; }
+  section { margin-top: 28px; }
+  .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .head small, .muted { color: var(--muted); font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .video { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+  .thumb { position: relative; display: block; aspect-ratio: 16/9; background: var(--line); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb span { position: absolute; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: rgba(16,28,63,.88); color: #fff; }
+  .thumb .rank { top: 6px; left: 6px; } .thumb .dur { bottom: 6px; right: 6px; }
+  .thumb .out { top: 6px; right: 6px; font-size: 12px; }
+  .out.hot { background: var(--pink); } .out.warm { background: var(--teal); color: var(--navy); } .out.cold { background: rgba(16,28,63,.88); color: #b9c3de; }
+  .video .body { padding: 10px 12px 12px; display: flex; flex-direction: column; flex: 1; }
+  .video .title { font-weight: 600; font-size: 14px; line-height: 1.35; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .video .meta { font-size: 12px; color: var(--muted); margin-top: 5px; }
+  .video .strong { color: var(--text); font-weight: 600; }
+  .video .why { margin-top: auto; align-self: flex-start; font-size: 12px; font-weight: 600; padding: 5px 10px; color: var(--accent); background: none; }
+  .video .why-wrap { padding-top: 10px; margin-top: auto; }
+  .notice { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  .notice code { background: rgba(127,127,127,.2); padding: 1px 5px; border-radius: 4px; }
+  .error { color: #d9342b; }
+  .tabs { display: flex; gap: 6px; }
+  .tabs button { padding: 5px 12px; font-size: 13px; border-radius: 999px; }
+  .tabs button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  .item p { margin: 0 0 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .item .meta { font-size: 12px; color: var(--muted); }
+  .item .t { font-weight: 600; }
+  .solved { color: var(--ok); font-weight: 600; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 800px) { .cols { grid-template-columns: 1fr; } }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; font-size: 13px; color: var(--text); }
+  .group-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--teal); border-radius: 10px; padding: 10px 14px; }
+  .tile b { display: block; font-size: 22px; font-weight: 700; }
+  .tile span { font-size: 12px; color: var(--muted); }
+  .chan { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .chan img { width: 44px; height: 44px; border-radius: 50%; }
+  dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; max-width: 680px; width: calc(100% - 32px); background: var(--card); color: var(--text); }
+  dialog::backdrop { background: rgba(16,28,63,.6); }
+  .dlg { padding: 20px 22px 22px; }
+  .dlg h3 { margin: 0 32px 2px 0; font-size: 16px; }
+  .dlg .verdict { margin: 12px 0; padding: 10px 14px; border-radius: 10px; background: var(--bg); border-left: 4px solid var(--teal); font-weight: 600; }
+  .dlg .verdict.hot { border-color: var(--pink); } .dlg .verdict.cold { border-color: var(--muted); }
+  .dlg ul { margin: 0; padding-left: 18px; } .dlg li { margin-bottom: 8px; }
+  .dlg h4 { margin: 16px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .dlg .close { position: absolute; top: 12px; right: 12px; border: 0; background: none; font-size: 20px; line-height: 1; }
+  button.chip { cursor: pointer; } button.chip.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .chip-group { font-size: 12px; color: var(--muted); align-self: center; margin: 0 2px 0 8px; } .chip-group:first-child { margin-left: 0; }
+  .table-wrap { overflow-x: auto; margin-top: 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child, th:last-child, td:last-child { text-align: left; }
+  td:last-child { white-space: normal; min-width: 220px; }
+  th { color: var(--muted); font-weight: 600; cursor: pointer; user-select: none; }
+  th.sorted { color: var(--text); } th.sorted::after { content: ' ↓'; }
+  tr.elastic td { background: color-mix(in srgb, var(--teal) 14%, transparent); font-weight: 600; }
+  td .best { color: var(--pink); font-weight: 700; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="in">
+    <h1>Topic <span>Scout</span></h1>
+    <p>Find what works on YouTube for a topic, and what people are asking about it.</p>
+    <nav>
+      <button type="button" data-view="topic" class="on">Topic research</button>
+      <button type="button" data-view="channel">Elastic vs competitors</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- Topic research -->
+  <div id="view-topic">
+    <form id="form">
+      <div class="row">
+        <input id="q" class="q" placeholder="Topic, e.g. observability, OpenTelemetry, vector search" autofocus required>
+        <button class="primary" type="submit">Research</button>
+      </div>
+      <div class="row">
+        <label>Published
+          <select id="period">
+            <option value="7">Last week</option>
+            <option value="30">Last month</option>
+            <option value="90">Last 3 months</option>
+            <option value="365" selected>Last year</option>
+            <option value="730">Last 2 years</option>
+            <option value="">Any time</option>
+            <option value="custom">Custom range</option>
+          </select>
+        </label>
+        <label class="custom hidden">From <input type="date" id="from"></label>
+        <label class="custom hidden">To <input type="date" id="to"></label>
+        <label>Sort by
+          <select id="sort">
+            <option value="viewCount">Most viewed</option>
+            <option value="outlier">Outlier score</option>
+            <option value="velocity">Views per day</option>
+            <option value="viewsPerSub">Views per subscriber</option>
+            <option value="engagement">Engagement</option>
+            <option value="date">Newest</option>
+            <option value="relevance">Relevance</option>
+          </select>
+        </label>
+        <label>Format
+          <select id="format">
+            <option value="">All videos</option>
+            <option value="shorts">Shorts (60s or less)</option>
+            <option value="long">Long-form (over 3 min)</option>
+            <option value="medium">4 to 20 min</option>
+            <option value="verylong">Over 20 min</option>
+          </select>
+        </label>
+        <label>Language
+          <select id="lang">
+            <option value="en">English</option>
+            <option value="">Any</option>
+            <option value="es">Spanish</option>
+            <option value="pt">Portuguese</option>
+            <option value="de">German</option>
+            <option value="fr">French</option>
+            <option value="hi">Hindi</option>
+            <option value="ja">Japanese</option>
+          </select>
+        </label>
+        <label class="check" title="Drops videos that do not declare this language"><input type="checkbox" id="strict"> Strict</label>
+        <label>Min views <input id="minViews" class="num" type="number" min="0" placeholder="e.g. 10000"></label>
+        <label>Max subscribers <input id="maxSubs" class="num" type="number" min="0" placeholder="e.g. 50000"></label>
+        <label>Show
+          <select id="max">
+            <option value="10">Top 10</option>
+            <option value="20">Top 20</option>
+            <option value="30">Top 30</option>
+          </select>
+        </label>
+      </div>
+    </form>
+
+    <div id="results" class="hidden">
+      <section>
+        <div class="head"><h2>Top videos</h2><small id="videoInfo"></small></div>
+        <div id="videos"></div>
+      </section>
+
+      <section>
+        <div class="head">
+          <h2>From the comments</h2>
+          <div class="tabs">
+            <button type="button" data-tab="questions" class="on">Questions</button>
+            <button type="button" data-tab="insights">Insightful</button>
+          </div>
+          <small id="commentInfo"></small>
+        </div>
+        <div id="comments" class="list"></div>
+      </section>
+
+      <section class="cols">
+        <div>
+          <div class="head">
+            <h2>Elastic forum</h2>
+            <select id="forumOrder" style="padding:3px 8px;font-size:13px">
+              <option value="relevance">Most relevant</option>
+              <option value="latest">Latest</option>
+              <option value="views">Most viewed</option>
+              <option value="likes">Most liked</option>
+            </select>
+          </div>
+          <div id="forum" class="list"></div>
+        </div>
+        <div>
+          <div class="head"><h2>What people search on Google</h2></div>
+          <div id="suggest"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Channel analysis -->
+  <div id="view-channel" class="hidden">
+    <div class="panel">
+      <div class="head">
+        <h2>Elastic vs competitors</h2>
+        <button type="button" class="primary" id="compareBtn" style="padding:6px 14px">Compare all</button>
+        <small>Based on each channel's latest 100 videos. Click a name to analyse that channel below.</small>
+      </div>
+      <div id="presets" class="chips" style="margin-bottom:0"></div>
+      <div id="compare"></div>
+    </div>
+    <form id="channelForm" style="margin-top:16px">
+      <div class="row">
+        <label style="flex:1;min-width:220px">Channel handle
+          <input id="handle" value="@OfficialElasticCommunity">
+        </label>
+        <label>Sort by
+          <select id="chSort">
+            <option value="outlier">Outlier score</option>
+            <option value="viewCount">Most viewed</option>
+            <option value="velocity">Views per day</option>
+            <option value="engagement">Engagement</option>
+            <option value="date">Newest</option>
+          </select>
+        </label>
+        <label>Format
+          <select id="chFormat">
+            <option value="">All videos</option>
+            <option value="shorts">Shorts (60s or less)</option>
+            <option value="long">Long-form (over 3 min)</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="chTopic"> Only videos matching my topic</label>
+        <button class="primary" type="submit">Load channel</button>
+      </div>
+    </form>
+    <div id="channelSummary"></div>
+    <section>
+      <div class="head"><h2>Videos</h2><small id="channelInfo"></small></div>
+      <div id="channelVideos"></div>
+    </section>
+  </div>
+</main>
+
+<dialog id="why"><div class="dlg" id="whyBody"></div></dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+const num = (n) => compact.format(Math.round(n));
+const pct = (x) => (x * 100).toFixed(x < 0.1 ? 1 : 0) + '%';
+const times = (x) => (x >= 10 ? Math.round(x) : x.toFixed(1)) + 'x';
+const fmtDate = (d) => new Date(d).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' });
+const fmtDur = (s) => {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+};
+const median = (a) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const loading = '<p class="muted">Loading…</p>';
+const errorHtml = (e) => `<p class="error">${esc(e.message)}</p>`;
+const isShort = (v) => v.seconds > 0 && v.seconds <= 60;
+// Lots of views with next to no likes or comments usually means the views were bought as ads.
+const likelyAds = (v) => v.views >= 5000 && v.engagement < 0.003;
+
+async function api(path, params) {
+  const u = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v) u.set(k, v);
+  const res = await fetch(`${path}?${u}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function filters() {
+  const period = $('period').value;
+  let after = '', before = '';
+  if (period === 'custom') {
+    if ($('from').value) after = new Date($('from').value).toISOString();
+    if ($('to').value) before = new Date($('to').value + 'T23:59:59').toISOString();
+  } else if (period) {
+    after = new Date(Date.now() - period * 864e5).toISOString();
+  }
+  return {
+    q: $('q').value.trim(), after, before,
+    sort: $('sort').value, format: $('format').value, lang: $('lang').value,
+    strict: $('strict').checked ? '1' : '', minViews: $('minViews').value, maxSubs: $('maxSubs').value,
+    max: $('max').value,
+  };
+}
+
+const keyNotice = (q) => `<div class="notice">
+  <strong>YouTube API key needed for videos and comments.</strong>
+  Paste it into the <code>.env</code> file as <code>YOUTUBE_API_KEY=your-key</code>, then search again.
+  ${q ? `Meanwhile: <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" rel="noopener">open this search on YouTube</a>.` : ''}
+</div>`;
+
+// ---------- Video cards (shared by both views) ----------
+const sets = { topic: [], channel: [] };
+
+function outlierBadge(v) {
+  if (v.outlier == null) return '';
+  const cls = v.outlier >= 5 ? 'hot' : v.outlier >= 2 ? 'warm' : 'cold';
+  return `<span class="out ${cls}" title="Views compared with this channel's typical video">${times(v.outlier)}</span>`;
+}
+
+function cards(videos, set) {
+  return '<div class="grid">' + videos.map((v, i) => `
+    <div class="video">
+      <a class="thumb" href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">
+        <img src="${esc(v.thumbnail)}" alt="" loading="lazy">
+        <span class="rank">#${i + 1}</span>${outlierBadge(v)}<span class="dur">${fmtDur(v.seconds)}</span>
+      </a>
+      <div class="body">
+        <a class="title" href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>
+        <div class="meta"><a href="https://www.youtube.com/channel/${esc(v.channelId)}" target="_blank" rel="noopener">${esc(v.channel)}</a>${v.subs != null ? ` · ${num(v.subs)} subs` : ''}</div>
+        <div class="meta"><span class="strong">${num(v.views)} views</span> · ${fmtDate(v.publishedAt)}</div>
+        <div class="meta">${num(v.viewsPerDay)} views/day · ${pct(v.engagement)} engagement${likelyAds(v) ? ' · <span class="strong" title="Many views, almost no likes or comments">likely ads</span>' : ''}</div>
+        <div class="why-wrap"><button type="button" class="why" data-set="${set}" data-id="${esc(v.id)}">Why did it perform?</button></div>
+      </div>
+    </div>`).join('') + '</div>';
+}
+
+// ---------- "Why did it perform?" ----------
+function titleSignals(title) {
+  const found = [];
+  if (/\d/.test(title.replace(/20\d\d/g, ''))) found.push('a number');
+  if (/\b20\d\d\b/.test(title)) found.push('the year (signals freshness)');
+  if (/\?|^(how|why|what)\b/i.test(title)) found.push('a question or how-to framing');
+  if (/[(\[].+[)\]]/.test(title)) found.push('a bracketed extra');
+  if (/\b(vs\.?|versus)\b/i.test(title)) found.push('a comparison');
+  if (/\b(crash course|full course|tutorial|explained|for beginners|in \d+ (minutes|mins|seconds|hours))\b/i.test(title)) found.push('a clear learning promise');
+  if (/\b[A-Z]{4,}\b/.test(title)) found.push('an all-caps word');
+  return found;
+}
+
+function explain(v, peers) {
+  const medVpd = median(peers.map((p) => p.viewsPerDay));
+  const medEng = median(peers.map((p) => p.engagement));
+  const medSec = median(peers.map((p) => p.seconds));
+  const ageDays = Math.round((Date.now() - new Date(v.publishedAt)) / 864e5);
+  let verdict, tone = '';
+  if (v.outlier == null) verdict = 'No channel baseline available, so this is judged against the other results only.';
+  else if (v.outlier >= 5) { verdict = `Breakout hit: ${times(v.outlier)} this channel's normal views.`; tone = 'hot'; }
+  else if (v.outlier >= 2) verdict = `Strong performer: ${times(v.outlier)} this channel's normal views.`;
+  else if (v.outlier >= 0.75) { verdict = `About normal for this channel (${times(v.outlier)}).`; tone = 'cold'; }
+  else { verdict = `Underperformed for this channel (${times(v.outlier)} its normal views).`; tone = 'cold'; }
+  if (likelyAds(v)) { verdict = `Probably paid promotion, not a real hit: ${num(v.views)} views but almost no likes or comments. Treat its outlier score with caution.`; tone = 'cold'; }
+
+  const points = [];
+  if (v.outlier != null) {
+    const base = `<b>Against its own channel:</b> ${num(v.views)} views, where a typical recent video gets ${num(v.channelMedian)}. `;
+    points.push(base + (v.outlier >= 2
+      ? 'The regular audience cannot explain that gap, so the topic, title or thumbnail pulled in new viewers.'
+      : v.outlier >= 0.75
+        ? 'That matches what this channel usually gets, so its existing audience explains most of the views.'
+        : 'Even the channel\'s own audience mostly skipped it, which points at the topic or the packaging.'));
+  }
+  if (v.viewsPerSub != null) {
+    points.push(`<b>Reach beyond subscribers:</b> views are ${times(v.viewsPerSub)} the subscriber count (${num(v.subs)}). ` + (v.viewsPerSub >= 1
+      ? 'Most viewers were not subscribers; they came from search or recommendations. A topic that does this for a small channel is a good one to cover.'
+      : v.viewsPerSub < 0.1 ? 'It reached only a small slice of the channel\'s own subscribers.' : 'Roughly what a subscribed audience alone can deliver.'));
+  }
+  if (medVpd) {
+    const r = v.viewsPerDay / medVpd;
+    points.push(`<b>Speed:</b> ${num(v.viewsPerDay)} views a day over ${ageDays} days, ${times(r)} the middle of this list. ` + (ageDays > 180 && r >= 1
+      ? 'Still pulling views months later, which suggests steady search demand rather than a one-week spike.'
+      : ageDays < 30 ? 'It is new, so this number is still settling.' : ''));
+  }
+  if (medEng) {
+    const r = v.engagement / medEng;
+    points.push(`<b>Engagement:</b> ${pct(v.engagement)} of viewers liked or commented (list middle: ${pct(medEng)}). ` + (r >= 1.3
+      ? 'Viewers valued it, not just clicked it.'
+      : r <= 0.6 ? 'Many clicks but a weak reaction: the packaging may have promised more than the video gave.' : 'In line with similar videos.'));
+  }
+  const sig = titleSignals(v.title);
+  points.push(`<b>Title:</b> ${v.title.length} characters` + (v.title.length > 70 ? ' (long; it gets cut off in search results)' : '') + (sig.length ? `, and it uses ${sig.join(', ')}.` : ', with no common hook pattern (number, question, comparison, learning promise).'));
+  if (medSec && v.seconds) {
+    points.push(`<b>Length:</b> ${fmtDur(v.seconds)}, against a list middle of ${fmtDur(Math.round(medSec))}.`);
+  }
+  if (v.tags.length) points.push(`<b>Tags:</b> ${esc(v.tags.join(', '))}`);
+  return { verdict, tone, points };
+}
+
+async function openWhy(set, id) {
+  const peers = sets[set];
+  const v = peers.find((x) => x.id === id);
+  if (!v) return;
+  const { verdict, tone, points } = explain(v, peers);
+  $('whyBody').innerHTML = `
+    <button class="close" type="button" aria-label="Close">×</button>
+    <h3>${esc(v.title)}</h3>
+    <div class="muted">${esc(v.channel)} · ${fmtDate(v.publishedAt)} · <a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">Watch</a></div>
+    <div class="verdict ${tone}">${esc(verdict)}</div>
+    <ul>${points.map((p) => `<li>${p}</li>`).join('')}</ul>
+    <h4>What viewers said</h4>
+    <div id="whyComments" class="list">${loading}</div>
+    <p class="muted" style="margin:14px 0 0">This reads public numbers and comments only. It cannot watch the video, so it does not judge the hook, the pacing, or whether the video delivers on its title.</p>`;
+  $('why').showModal();
+  try {
+    const c = await api('/api/comments', { ids: v.id });
+    const picks = [...c.top.slice(0, 3), ...c.questions.filter((q) => !c.top.slice(0, 3).some((t) => t.id === q.id)).slice(0, 3)];
+    if ($('whyComments')) $('whyComments').innerHTML = picks.length ? picks.map((x) => `
+      <div class="item"><p>${esc(x.text.slice(0, 400))}${x.text.length > 400 ? '…' : ''}</p><div class="meta">${num(x.likes)} likes · ${x.replies} replies</div></div>`).join('')
+      : '<p class="muted">No comments available for this video.</p>';
+  } catch (e) { if ($('whyComments')) $('whyComments').innerHTML = errorHtml(e); }
+}
+
+document.addEventListener('click', (e) => {
+  const why = e.target.closest('.why');
+  if (why) openWhy(why.dataset.set, why.dataset.id);
+  if (e.target.closest('.close') || e.target === $('why')) $('why').close();
+});
+
+// ---------- Topic research ----------
+let commentData = null, videoTitles = {}, tab = 'questions';
+
+async function loadVideos(f) {
+  $('videos').innerHTML = loading;
+  $('videoInfo').textContent = '';
+  $('comments').innerHTML = '';
+  $('commentInfo').textContent = '';
+  commentData = null;
+  try {
+    const { videos, needsKey, candidates } = await api('/api/youtube', f);
+    if (needsKey) {
+      $('videos').innerHTML = keyNotice(f.q);
+      $('comments').innerHTML = '<p class="muted">Comments appear here once the API key is added.</p>';
+      return;
+    }
+    sets.topic = videos;
+    if (!videos.length) { $('videos').innerHTML = '<p class="muted">No videos matched these filters. Try loosening them.</p>'; return; }
+    $('videoInfo').textContent = `${videos.length} shown of ${candidates} that matched · ${num(videos.reduce((n, v) => n + v.views, 0))} total views · badge = outlier score`;
+    videoTitles = Object.fromEntries(videos.map((v) => [v.id, v.title]));
+    $('videos').innerHTML = cards(videos, 'topic');
+    loadComments(videos.slice(0, 10).map((v) => v.id));
+  } catch (e) { $('videos').innerHTML = errorHtml(e); }
+}
+
+async function loadComments(ids) {
+  $('comments').innerHTML = loading;
+  try {
+    commentData = await api('/api/comments', { ids: ids.join(',') });
+    $('commentInfo').textContent = `${commentData.questions.length} questions and ${commentData.insights.length} longer comments, from ${commentData.total} top comments`;
+    renderComments();
+  } catch (e) { $('comments').innerHTML = errorHtml(e); }
+}
+
+function renderComments() {
+  if (!commentData) return;
+  const items = commentData[tab];
+  $('comments').innerHTML = items.length ? items.map((c) => `
+    <div class="item">
+      <p>${esc(c.text)}</p>
+      <div class="meta">${num(c.likes)} likes · ${c.replies} replies · ${esc(c.author)} ·
+        on <a href="https://www.youtube.com/watch?v=${esc(c.videoId)}&lc=${esc(c.id)}" target="_blank" rel="noopener">${esc(videoTitles[c.videoId] || 'video')}</a></div>
+    </div>`).join('') : '<p class="muted">Nothing found in this group.</p>';
+}
+
+async function loadForum(f) {
+  $('forum').innerHTML = loading;
+  try {
+    const { topics } = await api('/api/forum', { q: f.q, after: f.after, before: f.before, order: $('forumOrder').value });
+    $('forum').innerHTML = topics.length ? topics.map((t) => `
+      <div class="item">
+        <a class="t" href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.title)}</a>
+        <p class="muted">${esc(t.blurb.slice(0, 220))}</p>
+        <div class="meta">${t.posts - 1} replies · ${fmtDate(t.createdAt)}${t.solved ? ' · <span class="solved">Solved</span>' : ''}${t.tags.length ? ' · ' + esc(t.tags.join(', ')) : ''}</div>
+      </div>`).join('') : '<p class="muted">No forum topics matched.</p>';
+  } catch (e) { $('forum').innerHTML = errorHtml(e); }
+}
+
+async function loadSuggest(f) {
+  $('suggest').innerHTML = loading;
+  try {
+    const { groups } = await api('/api/suggest', { q: f.q });
+    $('suggest').innerHTML = groups.length ? groups.map((g) => `
+      <div class="group-label">${esc(g.label)}</div>
+      <div class="chips">${g.items.map((s) => `<a class="chip" href="https://www.google.com/search?q=${encodeURIComponent(s)}" target="_blank" rel="noopener">${esc(s)}</a>`).join('')}</div>`).join('')
+      : '<p class="muted">No suggestions found.</p>';
+  } catch (e) { $('suggest').innerHTML = errorHtml(e); }
+}
+
+$('form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const f = filters();
+  if (!f.q) return;
+  $('results').classList.remove('hidden');
+  loadVideos(f); loadForum(f); loadSuggest(f);
+});
+$('period').addEventListener('change', () => {
+  document.querySelectorAll('.custom').forEach((el) => el.classList.toggle('hidden', $('period').value !== 'custom'));
+});
+$('forumOrder').addEventListener('change', () => { const f = filters(); if (f.q) loadForum(f); });
+document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+  tab = b.dataset.tab;
+  document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('on', x === b));
+  renderComments();
+}));
+
+// ---------- Channel analysis ----------
+let channelData = null;
+const CH_SORTS = {
+  outlier: (v) => v.outlier ?? -1, viewCount: (v) => v.views, velocity: (v) => v.viewsPerDay,
+  engagement: (v) => v.engagement, date: (v) => +new Date(v.publishedAt),
+};
+
+function renderChannel() {
+  if (!channelData) return;
+  const c = channelData.channel;
+  const topic = $('q').value.trim();
+  const topicMedian = sets.topic.length ? median(sets.topic.map((v) => v.views)) : null;
+  $('channelSummary').innerHTML = `
+    <div class="chan">${c.thumbnail ? `<img src="${esc(c.thumbnail)}" alt="">` : ''}
+      <div><a href="${esc(c.url)}" target="_blank" rel="noopener"><b>${esc(c.title)}</b></a>
+      <div class="muted">${num(c.videoCount)} videos in total · numbers below cover the latest ${c.analysed}</div></div></div>
+    <div class="tiles">
+      <div class="tile"><b>${c.subs == null ? 'Hidden' : num(c.subs)}</b><span>Subscribers</span></div>
+      <div class="tile"><b>${num(c.medianLongViews)}</b><span>Typical views, regular video</span></div>
+      <div class="tile"><b>${num(c.medianShortViews)}</b><span>Typical views, Short</span></div>
+      <div class="tile"><b>${num(c.medianViewsPerDay)}</b><span>Typical views per day</span></div>
+      <div class="tile"><b>${pct(c.medianEngagement)}</b><span>Typical engagement</span></div>
+      <div class="tile"><b>${c.uploads90d}</b><span>Uploads in last 90 days</span></div>
+    </div>
+    ${topicMedian != null ? `<p class="muted" style="margin:12px 0 0">For comparison: the top videos for "${esc(topic)}" in your last topic search have a middle value of <b>${num(topicMedian)}</b> views, against <b>${num(c.medianViews)}</b> for this channel's typical video.</p>` : ''}`;
+
+  let videos = channelData.videos;
+  const fmt = $('chFormat').value;
+  if (fmt === 'shorts') videos = videos.filter(isShort);
+  if (fmt === 'long') videos = videos.filter((v) => v.seconds > 180);
+  if ($('chTopic').checked && topic) {
+    const words = topic.toLowerCase().split(/\s+/);
+    videos = videos.filter((v) => { const hay = (v.title + ' ' + v.tags.join(' ')).toLowerCase(); return words.every((w) => hay.includes(w)); });
+  }
+  const by = CH_SORTS[$('chSort').value];
+  videos = [...videos].sort((a, b) => by(b) - by(a)).slice(0, 30);
+  sets.channel = channelData.videos;
+  $('channelInfo').textContent = `Top ${videos.length} by this sort · badge = views against this channel's typical video of the same kind`;
+  $('channelVideos').innerHTML = videos.length ? cards(videos, 'channel')
+    : `<p class="muted">No videos matched${$('chTopic').checked && topic ? ` "${esc(topic)}" in the title or tags` : ''}.</p>`;
+}
+
+async function loadChannel() {
+  $('channelSummary').innerHTML = '';
+  $('channelVideos').innerHTML = loading;
+  $('channelInfo').textContent = '';
+  const current = $('handle').value.trim().toLowerCase();
+  document.querySelectorAll('#presets .chip').forEach((b) => b.classList.toggle('on', b.dataset.handle.toLowerCase() === current));
+  try {
+    const data = await api('/api/channel', { handle: $('handle').value.trim() });
+    if (data.needsKey) { $('channelVideos').innerHTML = keyNotice(''); return; }
+    channelData = data;
+    renderChannel();
+  } catch (e) { $('channelVideos').innerHTML = errorHtml(e); }
+}
+
+// ---------- Competitor comparison ----------
+// Edit this list to add or remove channels. Use the handle from the channel's YouTube URL.
+const CHANNELS = [
+  { group: 'Elastic', handles: ['@OfficialElasticCommunity', '@elastic'] },
+  { group: 'Observability', handles: ['@DatadogHQ', '@Grafana', '@splunkofficial', '@dynatrace', '@NewRelicInc', '@honeycombio', '@SigNoz'] },
+  { group: 'Search and data', handles: ['@OpenSearchProject', '@MongoDB', '@ClickHouseDB', '@Algolia', '@pinecone-io', '@Weaviate', '@qdrant'] },
+];
+const ELASTIC = new Set(CHANNELS[0].handles.map((h) => h.toLowerCase()));
+const COLUMNS = [
+  ['Channel', (c) => c.title.toLowerCase(), (c) => `<a href="#" data-handle="${esc(c.handle)}">${esc(c.title)}</a>`],
+  ['Subscribers', (c) => c.subs ?? 0, (c) => (c.subs == null ? 'Hidden' : num(c.subs))],
+  ['Typical views', (c) => c.medianLongViews, (c) => num(c.medianLongViews)],
+  ['Typical Short', (c) => c.medianShortViews, (c) => (c.medianShortViews ? num(c.medianShortViews) : '–')],
+  ['Views per 1K subs', (c) => (c.subs ? c.medianLongViews / c.subs : 0), (c) => (c.subs ? Math.round((c.medianLongViews / c.subs) * 1000) : '–')],
+  ['Engagement', (c) => c.medianEngagement, (c) => pct(c.medianEngagement)],
+  ['Uploads, 90 days', (c) => c.uploads90d, (c) => c.uploads90d],
+  ['Most viewed recent video', (c) => c.best?.views ?? 0, (c) => (c.best ? `<a href="https://www.youtube.com/watch?v=${esc(c.best.id)}" target="_blank" rel="noopener">${esc(c.best.title)}</a> <span class="muted">(${num(c.best.views)})</span>` : '')],
+];
+let compareRows = [], compareSort = 2;
+
+$('presets').innerHTML = CHANNELS.map((g) => `<span class="chip-group">${esc(g.group)}</span>` +
+  g.handles.map((h) => `<button type="button" class="chip" data-handle="${esc(h)}">${esc(h.slice(1))}</button>`).join('')).join('');
+
+function renderCompare() {
+  const ok = compareRows.filter((c) => !c.error), failed = compareRows.filter((c) => c.error);
+  const key = COLUMNS[compareSort][1];
+  ok.sort((a, b) => (compareSort === 0 ? String(key(a)).localeCompare(key(b)) : key(b) - key(a)));
+  const bestOf = COLUMNS.map(([, k], i) => (i > 0 && i < 7 ? Math.max(...ok.map(k)) : null));
+  $('compare').innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>${COLUMNS.map(([label], i) => `<th data-col="${i}" class="${i === compareSort ? 'sorted' : ''}">${label}</th>`).join('')}</tr></thead>
+    <tbody>${ok.map((c) => `<tr class="${ELASTIC.has(c.handle.toLowerCase()) ? 'elastic' : ''}">${COLUMNS.map(([, k, cell], i) =>
+      `<td>${bestOf[i] != null && k(c) === bestOf[i] ? `<span class="best">${cell(c)}</span>` : cell(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>
+  <p class="muted" style="margin:10px 0 0">"Typical" is the middle value, so one viral video does not skew it. Typical views covers regular videos; Shorts are counted apart. Pink marks the best in each column; Elastic rows are tinted. Click a column to sort.</p>
+  ${failed.length ? `<p class="error">Could not load: ${esc(failed.map((c) => c.handle).join(', '))}</p>` : ''}`;
+}
+
+$('compareBtn').addEventListener('click', async () => {
+  $('compare').innerHTML = loading;
+  try {
+    const data = await api('/api/compare', { handles: CHANNELS.flatMap((g) => g.handles).join(',') });
+    if (data.needsKey) { $('compare').innerHTML = keyNotice(''); return; }
+    compareRows = data.channels;
+    renderCompare();
+  } catch (e) { $('compare').innerHTML = errorHtml(e); }
+});
+$('view-channel').addEventListener('click', (e) => {
+  const th = e.target.closest('th[data-col]');
+  if (th) { compareSort = +th.dataset.col; renderCompare(); return; }
+  const pick = e.target.closest('[data-handle]');
+  if (!pick) return;
+  e.preventDefault();
+  $('handle').value = pick.dataset.handle;
+  loadChannel();
+  $('channelForm').scrollIntoView({ behavior: 'smooth' });
+});
+
+$('channelForm').addEventListener('submit', (e) => { e.preventDefault(); loadChannel(); });
+['chSort', 'chFormat', 'chTopic'].forEach((id) => $(id).addEventListener('change', renderChannel));
+
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('on', x === b));
+  $('view-topic').classList.toggle('hidden', b.dataset.view !== 'topic');
+  $('view-channel').classList.toggle('hidden', b.dataset.view !== 'channel');
+  if (b.dataset.view === 'channel') { if (channelData) renderChannel(); else loadChannel(); }
+}));
+</script>
+</body>
+</html>
