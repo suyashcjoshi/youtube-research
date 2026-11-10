@@ -59,6 +59,10 @@ Then click **Analyse thumbnails** above any video grid. Each click sends up to 1
 - The app reads public numbers and comments. It does not watch videos.
 - Your API key stays on your machine. `.env` is ignored by git.
 
+## What's next
+
+See [TODO.md](TODO.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
