@@ -242,6 +242,15 @@
         <label style="flex:1;min-width:220px">Channel handle
           <input id="handle" value="@OfficialElasticCommunity">
         </label>
+        <label>Published
+          <select id="chPeriod">
+            <option value="">Latest 100 videos</option>
+            <option value="30">Last month</option>
+            <option value="90">Last 3 months</option>
+            <option value="365">Last year</option>
+            <option value="730">Last 2 years</option>
+          </select>
+        </label>
         <label>Sort by
           <select id="chSort">
             <option value="outlier">Outlier score</option>
@@ -256,6 +265,14 @@
             <option value="">All videos</option>
             <option value="shorts">Shorts (60s or less)</option>
             <option value="long">Long-form (over 3 min)</option>
+          </select>
+        </label>
+        <label>Min views <input id="chMinViews" class="num" type="number" min="0" placeholder="e.g. 1000"></label>
+        <label>Show
+          <select id="chMax">
+            <option value="10">Top 10</option>
+            <option value="30" selected>Top 30</option>
+            <option value="100">Top 100</option>
           </select>
         </label>
         <label class="check"><input type="checkbox" id="chTopic"> Only videos matching my topic</label>
@@ -527,7 +544,9 @@ document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('cli
 }));
 
 // ---------- Channel analysis ----------
-let channelData = null;
+let channelData = null, channelRequest = 0;
+// Rounded to the day so repeat requests hit the server's cache.
+const chAfter = () => ($('chPeriod').value ? new Date(Date.now() - $('chPeriod').value * 864e5).toISOString().slice(0, 10) + 'T00:00:00.000Z' : '');
 const CH_SORTS = {
   outlier: (v) => v.outlier ?? -1, viewCount: (v) => v.views, velocity: (v) => v.viewsPerDay,
   engagement: (v) => v.engagement, date: (v) => +new Date(v.publishedAt),
@@ -553,6 +572,9 @@ function renderChannel() {
     ${topicMedian != null ? `<p class="muted" style="margin:12px 0 0">For comparison: the top videos for "${esc(topic)}" in your last topic search have a middle value of <b>${num(topicMedian)}</b> views, against <b>${num(c.medianViews)}</b> for this channel's typical video.</p>` : ''}`;
 
   let videos = channelData.videos;
+  const after = chAfter();
+  if (after) videos = videos.filter((v) => v.publishedAt >= after);
+  if ($('chMinViews').value) videos = videos.filter((v) => v.views >= +$('chMinViews').value);
   const fmt = $('chFormat').value;
   if (fmt === 'shorts') videos = videos.filter(isShort);
   if (fmt === 'long') videos = videos.filter((v) => v.seconds > 180);
@@ -561,9 +583,10 @@ function renderChannel() {
     videos = videos.filter((v) => { const hay = (v.title + ' ' + v.tags.join(' ')).toLowerCase(); return words.every((w) => hay.includes(w)); });
   }
   const by = CH_SORTS[$('chSort').value];
-  videos = [...videos].sort((a, b) => by(b) - by(a)).slice(0, 30);
+  const matched = videos.length;
+  videos = [...videos].sort((a, b) => by(b) - by(a)).slice(0, +$('chMax').value);
   sets.channel = channelData.videos;
-  $('channelInfo').textContent = `Top ${videos.length} by this sort · badge = views against this channel's typical video of the same kind`;
+  $('channelInfo').textContent = `${videos.length} shown of ${matched} that matched · badge = views against this channel's typical video of the same kind`;
   $('channelVideos').innerHTML = videos.length ? cards(videos, 'channel')
     : `<p class="muted">No videos matched${$('chTopic').checked && topic ? ` "${esc(topic)}" in the title or tags` : ''}.</p>`;
 }
@@ -575,7 +598,9 @@ async function loadChannel() {
   const current = $('handle').value.trim().toLowerCase();
   document.querySelectorAll('#presets .chip').forEach((b) => b.classList.toggle('on', b.dataset.handle.toLowerCase() === current));
   try {
-    const data = await api('/api/channel', { handle: $('handle').value.trim() });
+    const request = ++channelRequest;
+    const data = await api('/api/channel', { handle: $('handle').value.trim(), after: chAfter() });
+    if (request !== channelRequest) return; // a newer request replaced this one
     if (data.needsKey) { $('channelVideos').innerHTML = keyNotice(''); return; }
     channelData = data;
     renderChannel();
@@ -640,7 +665,9 @@ $('view-channel').addEventListener('click', (e) => {
 });
 
 $('channelForm').addEventListener('submit', (e) => { e.preventDefault(); loadChannel(); });
-['chSort', 'chFormat', 'chTopic'].forEach((id) => $(id).addEventListener('change', renderChannel));
+['chSort', 'chFormat', 'chTopic', 'chMax'].forEach((id) => $(id).addEventListener('change', renderChannel));
+$('chMinViews').addEventListener('input', renderChannel);
+$('chPeriod').addEventListener('change', loadChannel); // older videos may need fetching
 
 document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('on', x === b));

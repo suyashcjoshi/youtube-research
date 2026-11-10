@@ -115,7 +115,8 @@ async function fetchChannels(ids, key) {
   return out;
 }
 
-async function uploadIds(playlistId, key, pages = 1) {
+// Uploads come newest first. With `after`, stop paging once videos are older than that date.
+async function uploadIds(playlistId, key, pages = 1, after = '') {
   const ids = [];
   let pageToken = '';
   for (let i = 0; i < pages; i++) {
@@ -124,7 +125,8 @@ async function uploadIds(playlistId, key, pages = 1) {
     );
     ids.push(...data.items.map((it) => it.contentDetails.videoId));
     pageToken = data.nextPageToken;
-    if (!pageToken) break;
+    const oldest = data.items.at(-1)?.contentDetails.videoPublishedAt;
+    if (!pageToken || (after && oldest && oldest < after)) break;
   }
   return ids;
 }
@@ -229,7 +231,8 @@ async function channelReport(p) {
   const c = data.items?.[0];
   if (!c) throw new Error(`No channel found for ${handle}`);
   const subs = c.statistics.hiddenSubscriberCount ? null : +c.statistics.subscriberCount || 0;
-  const ids = await uploadIds(c.contentDetails.relatedPlaylists.uploads, key, 2);
+  // Default: latest 100 videos. With a date filter: go back to that date, up to 500 videos.
+  const ids = await uploadIds(c.contentDetails.relatedPlaylists.uploads, key, p.after ? 10 : 2, p.after);
   const videos = await fetchVideos(ids, key);
   videos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
   // Shorts and long videos behave differently, so each is compared with its own kind.
