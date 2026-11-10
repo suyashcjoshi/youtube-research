@@ -11,7 +11,7 @@ Type a topic and it shows:
 - **Questions from the comments** of the top videos.
 - **Elastic forum topics** and **Google search suggestions** for the same topic.
 
-A second tab compares Elastic's channels with competitors (Datadog, Grafana, OpenSearch and others) in one table, and lets you dig into any one channel. To change the list, edit `CHANNELS` in `index.html`.
+It's made to help me with my day job at Elastic so the second tab compares Elastic's channels with competitors (Datadog, Grafana, OpenSearch and others) in one table, and lets you dig into any one channel. To change the list, edit `CHANNELS` in `index.html`.
 
 ## Get started
 
