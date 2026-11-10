@@ -1,4 +1,4 @@
-# YouTube Research - TopicScout
+# YouTube Research - Topic Scout
 
 A small local web app to research a topic before you make a video about it.
 
