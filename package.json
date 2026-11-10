@@ -1,0 +1,13 @@
+{
+  "name": "topic-scout",
+  "version": "0.1.0",
+  "description": "Research a topic on YouTube before you make a video about it.",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0"
+  }
+}

@@ -11,16 +11,18 @@ const BASELINE_VIDEOS = 20; // recent uploads used to work out a channel's "norm
 const cache = new Map();
 
 // Read the key on every request so it can be added to .env without a restart.
-function youtubeKey() {
-  if (process.env.YOUTUBE_API_KEY) return process.env.YOUTUBE_API_KEY;
+function envValue(name) {
+  if (process.env[name]) return process.env[name];
   try {
     const env = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
-    const m = env.match(/^\s*YOUTUBE_API_KEY\s*=\s*["']?([^"'\s#]+)/m);
+    // [ \t] rather than \s, so an empty value never reads on into the next line
+    const m = env.match(new RegExp(`^[ \\t]*${name}[ \\t]*=[ \\t]*["']?([^"'\\s#]+)`, 'm'));
     return m ? m[1] : '';
   } catch {
     return '';
   }
 }
+const youtubeKey = () => envValue('YOUTUBE_API_KEY');
 
 async function getJson(url) {
   const hit = cache.get(url);
@@ -284,6 +286,108 @@ async function compareChannels(p) {
   return { channels };
 }
 
+// ---------- Thumbnail analysis (optional: needs ANTHROPIC_API_KEY and `npm install`) ----------
+const THUMBNAIL_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['summary', 'patterns', 'videos', 'advice'],
+  properties: {
+    summary: { type: 'string' },
+    patterns: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['pattern', 'evidence'],
+        properties: { pattern: { type: 'string' }, evidence: { type: 'string' } },
+      },
+    },
+    videos: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['number', 'shows', 'verdict'],
+        properties: { number: { type: 'integer' }, shows: { type: 'string' }, verdict: { type: 'string' } },
+      },
+    },
+    advice: { type: 'array', items: { type: 'string' } },
+  },
+};
+
+const THUMBNAIL_PROMPT = `You are helping a developer advocate at Elastic decide how to design YouTube thumbnails for technical videos.
+
+Below are thumbnails from a set of videos, each with its title, channel, views and outlier score. The outlier score is the video's views divided by that channel's typical views: 2x or more is a strong result, 5x or more is a breakout, under 0.75x underperformed. Videos marked "likely ads" got their views from paid promotion, so do not treat them as successes.
+
+Compare what the stronger performers do visually with what the weaker ones do. Look at text (amount, size, wording), faces and expressions, colours and contrast, logos, diagrams or screenshots, and how the thumbnail works together with the title.
+
+Return:
+- summary: two or three sentences on the main finding.
+- patterns: visual patterns you see, each with the evidence (which numbered thumbnails, and how they performed). Say so when the set is too small or mixed to support a pattern.
+- videos: for every thumbnail, its number, one sentence on what it shows, and one sentence on whether the thumbnail likely helped or hurt.
+- advice: three to five concrete things to try in the next thumbnail on this topic.
+
+Write in plain, simple English. Describe people by what is visible (for example "a man looking surprised") and do not name anyone from their face.`;
+
+const thumbnailCache = new Map();
+
+async function analyseThumbnails(_params, body) {
+  const key = envValue('ANTHROPIC_API_KEY');
+  if (!key) return { needsKey: true };
+  let Anthropic;
+  try {
+    const mod = require('@anthropic-ai/sdk');
+    Anthropic = mod.default || mod;
+  } catch {
+    return { needsInstall: true };
+  }
+  const videos = (body?.videos || []).filter((v) => /^[\w-]{11}$/.test(v.id)).slice(0, 12);
+  if (videos.length < 2) throw new Error('Need at least two videos to compare thumbnails.');
+  const cacheKey = videos.map((v) => v.id).join(',');
+  if (thumbnailCache.has(cacheKey)) return thumbnailCache.get(cacheKey);
+
+  const content = [{ type: 'text', text: THUMBNAIL_PROMPT }];
+  videos.forEach((v, i) => {
+    const outlier = typeof v.outlier === 'number' ? `${v.outlier.toFixed(1)}x` : 'unknown';
+    content.push({
+      type: 'text',
+      text: `Thumbnail ${i + 1}: "${v.title}" by ${v.channel}. ${v.views} views, outlier score ${outlier}${v.likelyAds ? ', likely ads' : ''}.`,
+    });
+    content.push({ type: 'image', source: { type: 'url', url: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` } });
+  });
+
+  const client = new Anthropic({ apiKey: key });
+  let response;
+  try {
+    response = await client.beta.messages.create({
+      model: 'claude-opus-5-5',
+      max_tokens: 16000,
+      // If the model declines, the API retries on a fallback model in the same call.
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      output_config: { effort: 'medium', format: { type: 'json_schema', schema: THUMBNAIL_SCHEMA } },
+      messages: [{ role: 'user', content }],
+    });
+  } catch (err) {
+    if (err instanceof Anthropic.AuthenticationError) throw new Error('The Anthropic API key was rejected. Check ANTHROPIC_API_KEY in .env.');
+    if (err instanceof Anthropic.RateLimitError) throw new Error('Anthropic rate limit reached. Wait a minute and try again.');
+    if (err instanceof Anthropic.APIError) throw new Error(`Claude API error: ${err.message}`);
+    throw err;
+  }
+  if (response.stop_reason === 'refusal') throw new Error('Claude declined to analyse these thumbnails.');
+  if (response.stop_reason === 'max_tokens') throw new Error('The analysis was cut off. Try fewer videos.');
+  const text = response.content.find((b) => b.type === 'text')?.text || '';
+  let analysis;
+  try {
+    analysis = JSON.parse(text);
+  } catch {
+    throw new Error('Claude returned an answer the app could not read. Try again.');
+  }
+  const result = { analysis, ids: videos.map((v) => v.id) };
+  thumbnailCache.set(cacheKey, result);
+  return result;
+}
+
 const QUESTION_START =
   /^(how|why|what|when|where|which|who|can|could|does|do|did|is|are|should|would|will|has|have|any(one|body)?)\b/i;
 
@@ -380,6 +484,7 @@ async function suggestQuestions(p) {
 
 const routes = {
   '/api/status': async () => ({ hasKey: !!youtubeKey() }),
+  '/api/thumbnails': analyseThumbnails,
   '/api/youtube': searchVideos,
   '/api/channel': channelReport,
   '/api/compare': compareChannels,
@@ -404,7 +509,13 @@ http
     const params = Object.fromEntries(url.searchParams);
     if (NEEDS_TOPIC.has(url.pathname) && !params.q?.trim()) return send(400, { error: 'Missing topic' });
     try {
-      send(200, await handler(params));
+      let body;
+      if (req.method === 'POST') {
+        let raw = '';
+        for await (const part of req) raw += part;
+        body = raw ? JSON.parse(raw) : {};
+      }
+      send(200, await handler(params, body));
     } catch (err) {
       const quota = err.reason === 'quotaExceeded' ? ' (daily YouTube quota used up; resets at midnight Pacific)' : '';
       send(502, { error: err.message + quota });

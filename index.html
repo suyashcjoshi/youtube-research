@@ -105,6 +105,12 @@
   th.sorted { color: var(--text); } th.sorted::after { content: ' ↓'; }
   tr.elastic td { background: color-mix(in srgb, var(--teal) 14%, transparent); font-weight: 600; }
   td .best { color: var(--pink); font-weight: 700; }
+  .thumbs-btn { padding: 4px 12px; font-size: 13px; font-weight: 600; color: var(--accent); background: none; }
+  .thumbs { margin-bottom: 16px; border-top: 3px solid var(--pink); }
+  .thumbs h4 { margin: 14px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .thumbs ul { margin: 0; padding-left: 18px; } .thumbs li { margin-bottom: 6px; }
+  .thumbs .t-row { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); }
+  .thumbs .t-row img { width: 120px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; flex: none; }
   .hidden { display: none; }
 </style>
 </head>
@@ -189,7 +195,8 @@
 
     <div id="results" class="hidden">
       <section>
-        <div class="head"><h2>Top videos</h2><small id="videoInfo"></small></div>
+        <div class="head"><h2>Top videos</h2><button type="button" class="thumbs-btn" data-set="topic">Analyse thumbnails</button><small id="videoInfo"></small></div>
+        <div id="thumbs-topic"></div>
         <div id="videos"></div>
       </section>
 
@@ -281,7 +288,8 @@
     </form>
     <div id="channelSummary"></div>
     <section>
-      <div class="head"><h2>Videos</h2><small id="channelInfo"></small></div>
+      <div class="head"><h2>Videos</h2><button type="button" class="thumbs-btn" data-set="channel">Analyse thumbnails</button><small id="channelInfo"></small></div>
+      <div id="thumbs-channel"></div>
       <div id="channelVideos"></div>
     </section>
   </div>
@@ -451,7 +459,48 @@ async function openWhy(set, id) {
   } catch (e) { if ($('whyComments')) $('whyComments').innerHTML = errorHtml(e); }
 }
 
+// ---------- Thumbnail analysis ----------
+const shown = { topic: [], channel: [] }; // the videos currently on screen in each view
+
+async function analyseThumbnails(set) {
+  const box = $(`thumbs-${set}`);
+  const videos = shown[set].slice(0, 12);
+  if (videos.length < 2) { box.innerHTML = '<p class="muted">Load at least two videos first.</p>'; return; }
+  box.innerHTML = `<div class="panel thumbs"><p class="muted" style="margin:0">Claude is looking at ${videos.length} thumbnails. This can take up to a minute…</p></div>`;
+  try {
+    const res = await fetch('/api/thumbnails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videos: videos.map((v) => ({ id: v.id, title: v.title, channel: v.channel, views: v.views, outlier: v.outlier, likelyAds: likelyAds(v) })) }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    if (data.needsKey || data.needsInstall) {
+      box.innerHTML = `<div class="notice"><strong>Thumbnail analysis uses Claude.</strong> ${data.needsKey
+        ? 'Add <code>ANTHROPIC_API_KEY=your-key</code> to the <code>.env</code> file, then click again.'
+        : 'Run <code>npm install</code> in the project folder, restart the app, then click again.'}</div>`;
+      return;
+    }
+    const a = data.analysis;
+    box.innerHTML = `<div class="panel thumbs">
+      <h2>Thumbnail analysis</h2>
+      <p style="margin:8px 0 0">${esc(a.summary)}</p>
+      <h4>Patterns</h4>
+      <ul>${a.patterns.map((p) => `<li><b>${esc(p.pattern)}</b> ${esc(p.evidence)}</li>`).join('')}</ul>
+      <h4>What to try</h4>
+      <ul>${a.advice.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+      <h4>Each thumbnail</h4>
+      ${a.videos.map((t) => { const v = videos[t.number - 1]; return v ? `<div class="t-row">
+        <img src="${esc(v.thumbnail)}" alt="">
+        <div><b>${t.number}. ${esc(v.title)}</b>${v.outlier != null ? ` <span class="muted">(${times(v.outlier)})</span>` : ''}<br>${esc(t.shows)} ${esc(t.verdict)}</div></div>` : ''; }).join('')}
+      <p class="muted" style="margin:12px 0 0">Written by Claude from the thumbnails, titles and numbers above. It is an opinion on a small sample, not a measurement.</p>
+    </div>`;
+  } catch (e) { box.innerHTML = errorHtml(e); }
+}
+
 document.addEventListener('click', (e) => {
+  const thumbsBtn = e.target.closest('.thumbs-btn');
+  if (thumbsBtn) analyseThumbnails(thumbsBtn.dataset.set);
   const why = e.target.closest('.why');
   if (why) openWhy(why.dataset.set, why.dataset.id);
   if (e.target.closest('.close') || e.target === $('why')) $('why').close();
@@ -473,7 +522,8 @@ async function loadVideos(f) {
       $('comments').innerHTML = '<p class="muted">Comments appear here once the API key is added.</p>';
       return;
     }
-    sets.topic = videos;
+    sets.topic = shown.topic = videos;
+    $('thumbs-topic').innerHTML = '';
     if (!videos.length) { $('videos').innerHTML = '<p class="muted">No videos matched these filters. Try loosening them.</p>'; return; }
     $('videoInfo').textContent = `${videos.length} shown of ${candidates} that matched · ${num(videos.reduce((n, v) => n + v.views, 0))} total views · badge = outlier score`;
     videoTitles = Object.fromEntries(videos.map((v) => [v.id, v.title]));
@@ -586,6 +636,8 @@ function renderChannel() {
   const matched = videos.length;
   videos = [...videos].sort((a, b) => by(b) - by(a)).slice(0, +$('chMax').value);
   sets.channel = channelData.videos;
+  shown.channel = videos;
+  $('thumbs-channel').innerHTML = '';
   $('channelInfo').textContent = `${videos.length} shown of ${matched} that matched · badge = views against this channel's typical video of the same kind`;
   $('channelVideos').innerHTML = videos.length ? cards(videos, 'channel')
     : `<p class="muted">No videos matched${$('chTopic').checked && topic ? ` "${esc(topic)}" in the title or tags` : ''}.</p>`;
