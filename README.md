@@ -2,7 +2,7 @@
 
 A small local web app to research a topic before you make a video about it. It is a free, open alternative to paid tools like vidIQ and TubeBuddy.
 
-I make developer videos at Elastic and built this to solve my own problem: YouTube search no longer lets me ask simple things like "the most viewed observability videos of the last year". I hope it is useful to you too.
+I make developer videos at Elastic and built this to solve my own problem and hope it is useful to you too.
 
 ![Topic Scout showing the top observability videos](docs/screenshot.jpg)
 
