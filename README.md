@@ -16,7 +16,7 @@ Type a topic and it shows:
 - **Questions from the comments**, plus Elastic forum topics and Google search suggestions on the same topic.
 - **Thumbnail analysis** (optional): Claude compares the thumbnails on screen.
 
-It's made to help me with my day job at Elastic, so a second tab compares Elastic's channels with competitors (Datadog, Grafana, OpenSearch and others). To change the list, edit `CHANNELS` in `index.html`.
+It's made to help me with my day job at Elastic, so a second tab compares Elastic's channels with competitors (Datadog, Grafana, OpenSearch and others). To change the list, edit `CHANNELS` in `public/app.js`.
 
 ## Get started
 

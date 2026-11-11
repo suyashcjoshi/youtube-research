@@ -13,7 +13,7 @@ Ideas for what to build next, roughly in order of value.
 ## More channels to learn from
 
 - [ ] **Top developer channels** as a third group in the comparison tab, to learn from creators and not only vendors. Starting list to check: Fireship, ThePrimeagen, Theo (t3.gg), TechWorld with Nana, NetworkChuck, freeCodeCamp, ByteByteGo, Traversy Media, The Coding Train, IBM Technology, Google Cloud Tech, AWS Developers.
-- [ ] **Edit the channel list in the app**, instead of in `index.html`.
+- [ ] **Edit the channel list in the app**, instead of in `public/app.js`.
 - [ ] **Date filter for the comparison table.** Today it always uses each channel's latest 100 videos.
 
 ## Smarter research

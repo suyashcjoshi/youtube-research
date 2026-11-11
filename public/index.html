@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topic Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="in">
+    <h1>Topic <span>Scout</span></h1>
+    <p>Find what works on YouTube for a topic, and what people are asking about it.</p>
+    <nav>
+      <button type="button" data-view="topic" class="on">Topic research</button>
+      <button type="button" data-view="channel">Elastic vs competitors</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- Topic research -->
+  <div id="view-topic">
+    <form id="form">
+      <div class="row">
+        <input id="q" class="q" placeholder="Topic, e.g. observability, OpenTelemetry, vector search" autofocus required>
+        <button class="primary" type="submit">Research</button>
+      </div>
+      <div class="row">
+        <label>Published
+          <select id="period">
+            <option value="7">Last week</option>
+            <option value="30">Last month</option>
+            <option value="90">Last 3 months</option>
+            <option value="365" selected>Last year</option>
+            <option value="730">Last 2 years</option>
+            <option value="">Any time</option>
+            <option value="custom">Custom range</option>
+          </select>
+        </label>
+        <label class="custom hidden">From <input type="date" id="from"></label>
+        <label class="custom hidden">To <input type="date" id="to"></label>
+        <label>Sort by
+          <select id="sort">
+            <option value="viewCount">Most viewed</option>
+            <option value="outlier">Outlier score</option>
+            <option value="velocity">Views per day</option>
+            <option value="viewsPerSub">Views per subscriber</option>
+            <option value="engagement">Engagement</option>
+            <option value="date">Newest</option>
+            <option value="relevance">Relevance</option>
+          </select>
+        </label>
+        <label>Format
+          <select id="format">
+            <option value="">All videos</option>
+            <option value="shorts">Shorts (60s or less)</option>
+            <option value="long">Long-form (over 3 min)</option>
+            <option value="medium">4 to 20 min</option>
+            <option value="verylong">Over 20 min</option>
+          </select>
+        </label>
+        <label>Language
+          <select id="lang">
+            <option value="en">English</option>
+            <option value="">Any</option>
+            <option value="es">Spanish</option>
+            <option value="pt">Portuguese</option>
+            <option value="de">German</option>
+            <option value="fr">French</option>
+            <option value="hi">Hindi</option>
+            <option value="ja">Japanese</option>
+          </select>
+        </label>
+        <label class="check" title="Drops videos that do not declare this language"><input type="checkbox" id="strict"> Strict</label>
+        <label>Min views <input id="minViews" class="num" type="number" min="0" placeholder="e.g. 10000"></label>
+        <label>Max subscribers <input id="maxSubs" class="num" type="number" min="0" placeholder="e.g. 50000"></label>
+        <label>Show
+          <select id="max">
+            <option value="10">Top 10</option>
+            <option value="20">Top 20</option>
+            <option value="30">Top 30</option>
+          </select>
+        </label>
+      </div>
+    </form>
+
+    <div id="results" class="hidden">
+      <section>
+        <div class="head"><h2>Top videos</h2><button type="button" class="thumbs-btn" data-set="topic">Analyse thumbnails</button><small id="videoInfo"></small></div>
+        <div id="thumbs-topic"></div>
+        <div id="videos"></div>
+      </section>
+
+      <section>
+        <div class="head">
+          <h2>From the comments</h2>
+          <div class="tabs">
+            <button type="button" data-tab="questions" class="on">Questions</button>
+            <button type="button" data-tab="insights">Insightful</button>
+          </div>
+          <small id="commentInfo"></small>
+        </div>
+        <div id="comments" class="list"></div>
+      </section>
+
+      <section class="cols">
+        <div>
+          <div class="head">
+            <h2>Elastic forum</h2>
+            <select id="forumOrder" style="padding:3px 8px;font-size:13px">
+              <option value="relevance">Most relevant</option>
+              <option value="latest">Latest</option>
+              <option value="views">Most viewed</option>
+              <option value="likes">Most liked</option>
+            </select>
+          </div>
+          <div id="forum" class="list"></div>
+        </div>
+        <div>
+          <div class="head"><h2>What people search on Google</h2></div>
+          <div id="suggest"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Channel analysis -->
+  <div id="view-channel" class="hidden">
+    <div class="panel">
+      <div class="head">
+        <h2>Elastic vs competitors</h2>
+        <button type="button" class="primary" id="compareBtn" style="padding:6px 14px">Compare all</button>
+        <small>Based on each channel's latest 100 videos. Click a name to analyse that channel below.</small>
+      </div>
+      <div id="presets" class="chips" style="margin-bottom:0"></div>
+      <div id="compare"></div>
+    </div>
+    <form id="channelForm" style="margin-top:16px">
+      <div class="row">
+        <label style="flex:1;min-width:220px">Channel handle
+          <input id="handle" value="@OfficialElasticCommunity">
+        </label>
+        <label>Published
+          <select id="chPeriod">
+            <option value="">Latest 100 videos</option>
+            <option value="30">Last month</option>
+            <option value="90">Last 3 months</option>
+            <option value="365">Last year</option>
+            <option value="730">Last 2 years</option>
+          </select>
+        </label>
+        <label>Sort by
+          <select id="chSort">
+            <option value="outlier">Outlier score</option>
+            <option value="viewCount">Most viewed</option>
+            <option value="velocity">Views per day</option>
+            <option value="engagement">Engagement</option>
+            <option value="date">Newest</option>
+          </select>
+        </label>
+        <label>Format
+          <select id="chFormat">
+            <option value="">All videos</option>
+            <option value="shorts">Shorts (60s or less)</option>
+            <option value="long">Long-form (over 3 min)</option>
+          </select>
+        </label>
+        <label>Min views <input id="chMinViews" class="num" type="number" min="0" placeholder="e.g. 1000"></label>
+        <label>Show
+          <select id="chMax">
+            <option value="10">Top 10</option>
+            <option value="30" selected>Top 30</option>
+            <option value="100">Top 100</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="chTopic"> Only videos matching my topic</label>
+        <button class="primary" type="submit">Load channel</button>
+      </div>
+    </form>
+    <div id="channelSummary"></div>
+    <section>
+      <div class="head"><h2>Videos</h2><button type="button" class="thumbs-btn" data-set="channel">Analyse thumbnails</button><small id="channelInfo"></small></div>
+      <div id="thumbs-channel"></div>
+      <div id="channelVideos"></div>
+    </section>
+  </div>
+</main>
+
+<dialog id="why"><div class="dlg" id="whyBody"></div></dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

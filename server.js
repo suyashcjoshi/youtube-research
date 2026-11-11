@@ -493,6 +493,12 @@ const routes = {
   '/api/suggest': suggestQuestions,
 };
 const NEEDS_TOPIC = new Set(['/api/youtube', '/api/forum', '/api/suggest']);
+const STATIC = {
+  '/': { file: 'index.html', type: 'text/html; charset=utf-8' },
+  '/index.html': { file: 'index.html', type: 'text/html; charset=utf-8' },
+  '/styles.css': { file: 'styles.css', type: 'text/css; charset=utf-8' },
+  '/app.js': { file: 'app.js', type: 'text/javascript; charset=utf-8' },
+};
 
 http
   .createServer(async (req, res) => {
@@ -501,9 +507,9 @@ http
       res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' });
       res.end(typeof body === 'string' ? body : JSON.stringify(body));
     };
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      return send(200, fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'), 'text/html; charset=utf-8');
-    }
+    // The front end: three fixed files in public/, read from disk each time so edits show on refresh.
+    const page = STATIC[url.pathname];
+    if (page) return send(200, fs.readFileSync(path.join(__dirname, 'public', page.file), 'utf8'), page.type);
     const handler = routes[url.pathname];
     if (!handler) return send(404, { error: 'Not found' });
     const params = Object.fromEntries(url.searchParams);
